@@ -59,6 +59,12 @@ class MainWindow(QWidget):
 
         self.setLayout(main_layout)
 
+    def mode_1(self):
+        self.canvas.mode = 1
+
+    def mode_2(self):
+        self.canvas.mode = 2
+
     def add_ribbon_tabs(self, ribbon_tabs):
         # File Tab
         file_tab = QWidget()
@@ -91,10 +97,17 @@ class MainWindow(QWidget):
         pen_tab = QWidget()
         pen_layout = QVBoxLayout(pen_tab)  # Use vertical layout to stack buttons
 
-        pen_button = QToolButton()
-        pen_button.setText("Pen")
+        mode_1_button = QToolButton()
+        mode_1_button.setText("Draw Mode")
+        mode_1_button.clicked.connect(self.mode_1)
+
+        mode_2_button = QToolButton()
+        mode_2_button.setText("Adjust Mode")
+        mode_2_button.clicked.connect(self.mode_2)
+
         # Connect to a placeholder function (you can implement a pen tool logic later)
-        pen_layout.addWidget(pen_button)
+        pen_layout.addWidget(mode_1_button)
+        pen_layout.addWidget(mode_2_button)
 
         ribbon_tabs.addTab(pen_tab, "Pen")
 

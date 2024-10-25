@@ -13,6 +13,7 @@ class DrawingCanvas(QWidget):
         self.first_control_points = []
         self.second_control_points = []
         self.smoothed_path = None
+        self.mode = 1
         self.is_drawing = True
         self.selected_control_point_index = None
         self.selected_control_point_type = None
@@ -23,6 +24,12 @@ class DrawingCanvas(QWidget):
         self.control_point_radius = 5
         self.sampling_interval = 10  # Adjust this value to change the frequency
         self.show()
+
+    def mode_1(self):
+        self.mode = 1
+    
+    def mode_2(self):
+        self.mode = 2
 
     def getCurrentTransform(self):
         transform = QTransform()
@@ -72,7 +79,7 @@ class DrawingCanvas(QWidget):
         pos = event.position()
 
         if event.button() == Qt.MouseButton.LeftButton:
-            if self.is_drawing:
+            if self.mode == 1:  # Drawing mode
                 self.points = []
                 self.sampled_points = []
                 self.first_control_points = []
@@ -80,7 +87,7 @@ class DrawingCanvas(QWidget):
                 self.smoothed_path = None
                 self.points.append(pos)
                 self.update()
-            else:
+            elif self.mode == 2:  # Adjustment mode
                 cp_type, index = self.getControlPointAtPosition(pos)
                 if index is not None:
                     self.selected_control_point_type = cp_type
@@ -105,10 +112,11 @@ class DrawingCanvas(QWidget):
         else:
             pos = self.mapToScene(event.position())  # Map to scene coordinates
 
-            if self.is_drawing:
+            if self.mode == 1:  # Drawing mode
                 self.points.append(pos)
                 self.update()
-            elif self.selected_control_point_index is not None:
+            elif self.mode == 2 and self.selected_control_point_index is not None:
+                # Adjustment mode: move the selected control point
                 if self.selected_control_point_type == 'first':
                     self.first_control_points[self.selected_control_point_index] = pos
                 elif self.selected_control_point_type == 'second':
@@ -118,11 +126,9 @@ class DrawingCanvas(QWidget):
                 )
                 self.update()
 
-
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
-            if self.is_drawing:
-                self.is_drawing = False
+            if self.mode == 1:  # Drawing mode
                 # Down-sample the points
                 sampled_points = self.points[::self.sampling_interval]
                 # Ensure the last point is included
@@ -133,13 +139,15 @@ class DrawingCanvas(QWidget):
                 self.first_control_points, self.second_control_points = self.getCurveControlPoints(self.sampled_points)
                 self.smoothed_path = self.createBezierPathFromControlPoints(self.sampled_points, self.first_control_points, self.second_control_points)
                 self.update()
-            elif self.selected_control_point_index is not None:
+            elif self.mode == 2 and self.selected_control_point_index is not None:
                 self.selected_control_point_index = None
                 self.selected_control_point_type = None
         elif event.button() == Qt.MouseButton.MiddleButton:
             self.pan_active = False
 
     def paintEvent(self, event):
+        print(self.mode)
+
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.fillRect(self.rect(), Qt.GlobalColor.white)
@@ -154,14 +162,15 @@ class DrawingCanvas(QWidget):
         pen = QPen(Qt.GlobalColor.black, 2)
         painter.setPen(pen)
 
-        if self.is_drawing:
+        if self.mode == 1:  # Drawing mode
             path = QPainterPath()
             if self.points:
                 path.moveTo(self.points[0])
                 for point in self.points[1:]:
                     path.lineTo(point)
             painter.drawPath(path)
-        elif self.smoothed_path:
+
+        elif self.mode == 2 and self.smoothed_path:
             painter.drawPath(self.smoothed_path)
 
             pen = QPen(Qt.GlobalColor.red, 1, Qt.PenStyle.DashLine)
@@ -180,8 +189,8 @@ class DrawingCanvas(QWidget):
                 painter.drawEllipse(cp1, self.control_point_radius, self.control_point_radius)
                 painter.drawEllipse(cp2, self.control_point_radius, self.control_point_radius)
 
-        # ------------------- Draw the Hollow Red Rectangle -------------------
-        pen = QPen(Qt.GlobalColor.red, 5)  # 10 pixels thick
+        # Draw the Hollow Red Rectangle (unchanged)
+        pen = QPen(Qt.GlobalColor.red, 5)  # 5 pixels thick
         pen.setStyle(Qt.PenStyle.SolidLine)
         painter.setPen(pen)
         painter.setBrush(Qt.GlobalColor.transparent)  # Hollow rectangle
@@ -189,7 +198,6 @@ class DrawingCanvas(QWidget):
         # Define the rectangle from (-960, -540) to (960, 540)
         rect = QRectF(-960, -540, 1920, 1080)
         painter.drawRect(rect)
-        # -----------------------------------------------------------------------
 
         painter.restore()
 
@@ -268,7 +276,7 @@ class DrawingCanvas(QWidget):
     def getControlPointAtPosition(self, pos):
         pos = self.mapToScene(pos)
 
-        if self.first_control_points != None:
+        if self.first_control_points:
             for i, cp in enumerate(self.first_control_points):
                 if (cp - pos).manhattanLength() <= self.control_point_radius * 2:
                     return ('first', i)
