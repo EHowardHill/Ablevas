@@ -60,10 +60,10 @@ class MainWindow(QWidget):
         self.setLayout(main_layout)
 
     def mode_1(self):
-        self.canvas.mode = 1
+        self.canvas.set_mode(1)
 
     def mode_2(self):
-        self.canvas.mode = 2
+        self.canvas.set_mode(2)
 
     def add_ribbon_tabs(self, ribbon_tabs):
         # File Tab

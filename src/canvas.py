@@ -25,11 +25,11 @@ class DrawingCanvas(QWidget):
         self.sampling_interval = 10  # Adjust this value to change the frequency
         self.show()
 
-    def mode_1(self):
-        self.mode = 1
-    
-    def mode_2(self):
-        self.mode = 2
+    def set_mode(self, m):
+        self.mode = m
+
+        if (m == 2):
+            self.paintEvent(self)
 
     def getCurrentTransform(self):
         transform = QTransform()
